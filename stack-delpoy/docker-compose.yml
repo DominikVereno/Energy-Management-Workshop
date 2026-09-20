@@ -1,0 +1,85 @@
+services:
+  grafana:
+    build: ../grafana
+    image: grafana:local
+    pull_policy: build
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    ports:
+      - "3000:3000"
+    environment:
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  heatpump-sim:
+    build: ../heat-pump-simulator
+    image: heat-pump-simulator:local
+    pull_policy: build
+    container_name: heatpump-sim
+    restart: unless-stopped
+    ports:
+      - "5020:5020"
+    environment:
+      MODBUS_HOST: 0.0.0.0
+      MODBUS_PORT: 5020
+      HEATPUMP_PROFILE: idm
+      LOG_LEVEL: INFO
+
+  control-service:
+    build: ../control-service
+    image: control-service:local
+    pull_policy: build
+    container_name: control-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: admin123
+      DOCKER_INFLUXDB_INIT_ORG: docs
+      DOCKER_INFLUXDB_INIT_BUCKET: openems
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN}
+      INFLUX_HOST: http://localhost:8086
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+
+  openems-edge:
+    build:
+      context: ../open-ems
+      dockerfile: tools/docker/edge/Dockerfile
+    image: open-ems:local
+    pull_policy: build
+    container_name: openems-edge
+    restart: unless-stopped
+    depends_on:
+      - heatpump-sim
+      - influxdb
+      - control-service
+    ports:
+      - "8080:8080"
+      - "8084:8084"
+    extra_hosts:
+      - "${WATTSON_PROXY_HOST}:host-gateway"
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/openems-config:/var/opt/openems/config
+      - ./data/openems-data:/var/opt/openems/data
+
+volumes:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:

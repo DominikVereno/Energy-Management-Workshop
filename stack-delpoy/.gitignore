@@ -1,0 +1,7 @@
+# Laufzeit-Daten der Container (RRD4J-Zeitreihen, eine Datei je Channel)
+data/openems-data/
+
+# Die Komponenten-Configs unter data/openems-config/ sind bewusst versioniert:
+# sie legen fest, welche Komponenten ein frisch geklonter Stack ueberhaupt hat.
+# Ausgenommen nur der reine Felix-Laufzeit-State:
+data/openems-config/Core/Meta.config

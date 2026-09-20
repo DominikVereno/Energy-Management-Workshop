@@ -1,0 +1,62 @@
+= io.openems.edge.price.service
+
+Reads the current electricity price from the `price-service` HTTP API and maps it to an OpenEMS
+Channel.
+
+The component is *read-only* — it never writes to the price-service. It polls
+`+<baseUrl>/prices?provider=&zone=&start=&end=&timeframe=15min+` on a fixed interval. Since
+`BridgeHttp`'s cycle subscription only supports static URLs and the price URL needs `start`/`end`
+relative to "now", this component builds a fresh URL with a plain `OkHttpClient` on its own
+scheduler instead, following the pattern of `io.openems.edge.timeofusetariff.awattar`.
+
+Fetching and selecting are deliberately separate:
+
+* `fetchTask` requests the window `[start of the current hour, now + 2 h)` and *caches* the
+  points it gets back.
+* `refreshTask` picks the point whose `[start, end)` interval covers the current instant, once
+  a *minute*.
+
+Both details fix a real defect. `start` must be floored to the full hour because the
+price-service only includes an hour when `start` is at or before its beginning — a window
+starting at "now − 15 min" silently lost the slot covering "now" from minute 15 of every hour
+onward. And selecting on every refresh rather than only on every poll is what keeps the
+published price tied to the present instead of to the last poll's slot.
+
+NOTE: A failed poll no longer discards the cached points — they carry their own validity and
+expire on their own. With a dead price-service the controller therefore keeps regulating until
+the lookahead (~2 h) is exhausted, and only then falls back to fail-open.
+
+== Channels
+
+|===
+| Channel | Unit | Source in the JSON response
+
+| `CurrentPrice` | EUR/kWh | the `points[]` entry covering "now"
+| `CommunicationFailed` | Fault | set when the request or the parsing fails
+| `NoPriceForCurrentTime` | Warning | the response was fine, but no point covers "now"
+|===
+
+The two failure channels are deliberately distinct: a data gap is not a communication problem,
+and reporting it as one sends the diagnosis down the wrong path.
+
+On a communication or parsing failure, or when no price point covers "now", `CurrentPrice` is
+cleared so that no stale value remains visible.
+
+== Configuration
+
+|===
+| Property | Description
+
+| `baseUrl` | Base URL of the price-service. The default `+http://price-service:8200+` only works if both run in the same Docker network — see below.
+| `provider` | price-service provider: `awattar` or `entsoe` (default `awattar`)
+| `zone` | Market zone, e.g. `AT`
+| `pollIntervalMinutes` | Minutes between two price fetches (default 15)
+|===
+
+WARNING: `provider` must name a provider the price-service actually has. It used to default to
+`mock`, which no longer exists — every instance created with the defaults failed immediately with
+`+{"ok": false, "error": "Unknown provider 'mock' …"}+`.
+
+In the heat-pump stack the price-service runs in its *own* Compose stack and is therefore not
+reachable under its service name from the Edge container. The live instance uses
+`+http://host.docker.internal:8200+` to reach it across the host port instead.
