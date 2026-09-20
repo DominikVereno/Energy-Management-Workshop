@@ -1,0 +1,100 @@
+= Controller Heat-Pump IDM
+
+Controls an IDM Navigator heat pump (`io.openems.edge.heatpump.idm`) in four modes
+(`mode`): MANUAL (0), HEATING_CURVE (1), PV_OPTIMIZED (2), PRICE_OPTIMIZED (3).
+
+Every mode builds on the previous one, and the enum values rise in the same order.
+HEATING_CURVE and PV_OPTIMIZED swapped their values on 2026-08-24 -- recorded
+`ActiveMode` points from before that have to be read the other way round.
+
+== MANUAL
+
+Writes the configured setpoints through unchanged; the heating curve is not touched:
+
+|===
+|Register |Config
+
+|Reg1710 (heating request) |`manualHeating`
+|Reg1711 (cooling request) |`manualCooling`
+|Reg1449 (flow setpoint heating) |`manualHeatingSetpoint`
+|Reg1491 (flow setpoint cooling) |`manualCoolingSetpoint`
+|===
+
+Reg1449 is only effective when the operating mode of circuit A (Reg1393) is 4 = "manual heating".
+
+== HEATING_CURVE
+
+Parameterises the weather-compensated heating curve and pins the room setpoint:
+
+|===
+|Register |Config |Note
+
+|Reg1393 (operating mode circuit A) |`circuitMode` |EEPROM: written only once per configuration change
+|Reg1429 (slope) |`curveSlope` |high values drive the flow setpoint towards 90 °C and the COP towards 1
+|Reg1442 (heating limit) |`heatingLimit` |the reference is the damped outdoor temperature Reg1002
+|Reg1401 (room setpoint) |`roomSetpoint` |base point of the curve
+|===
+
+== PV_OPTIMIZED
+
+Like HEATING_CURVE, plus the room setpoint is raised on a PV surplus.
+
+The surplus is `-GRID_POWER` of an `Electrical.Fronius` component (the Fronius Solar API reports
+`P_Grid` positive when drawing from the grid). If it exceeds `surplusThreshold`,
+`roomSetpoint + boostOffset` is written to Reg1401, otherwise `roomSetpoint`. The fallback only
+happens at `surplus < surplusThreshold - surplusHysteresis`, and a reached state holds for at
+least `minBoostHoldTime` minutes -- both against cycling.
+
+The intervention deliberately targets the room setpoint and not Reg1449: that keeps the heating
+curve active, and the flow setpoint rises by roughly `(1 + slope) * boostOffset`.
+
+== PRICE_OPTIMIZED
+
+Like HEATING_CURVE; in addition the price of a `Price.Service` component gates the heating
+request Reg1710. So nothing is boosted, something is *blocked*: if the price is above
+`priceThreshold`, Reg1710 goes to 0 and the plant to standby.
+
+Released at `price <= priceThreshold`, blocked again only at
+`priceThreshold + priceHysteresis`; in between `minPriceHoldTime` holds the state.
+
+*Fail-open:* without price data -- no `Price.Service` component referenced, `enabled=false`, or
+no price point covering "now" -- heating runs normally, as if there were no price optimisation
+at all.
+
+WARNING: `HeatingAllowedByPrice` = 1 does *not* prove that the price control is taking effect --
+with missing price data the very same 1 is there because of fail-open. Always cross-check
+`PriceNotAvailable` = 0 and `CurrentPrice` != null.
+
+== Clamping of hysteresis and hold time
+
+`priceHysteresis`, `minPriceHoldTime`, `surplusHysteresis` and `minBoostHoldTime` are clamped to
+`>= 0`. A negative hysteresis would swap the switching points -- the release threshold would sit
+below the blocking threshold -- and make the release flip on every cycle.
+
+`priceThreshold` and `surplusThreshold` stay unclamped: negative spot prices are real, "heat only
+at a negative price" is a legitimate setting.
+
+== Monitoring of the heating curve
+
+Because Reg1393/1429/1442 are written only once per configuration change (EEPROM), the plant can
+end up running permanently on parameters other than the configured ones after a restart or a
+manual change at the unit. Reading costs no EEPROM cycles, so every cycle compares target against
+actual and reports a deviation via `HeatingCurveMismatch` -- *without* writing back. Undefined
+registers (readback after a restart) deliberately raise no alarm.
+
+== Channels
+
+|===
+|Channel |Meaning
+
+|`ActiveMode` |currently effective mode
+|`AppliedSetpoint` |last written flow setpoint (MANUAL only)
+|`AppliedRoomSetpoint` |last written room setpoint (curve modes)
+|`SurplusPower` |feed-in surplus in W (PV_OPTIMIZED only)
+|`Boosting` |boost active
+|`ElectricalNotAvailable` |WARNING: PV_OPTIMIZED, but no GRID_POWER available
+|`CurrentPrice` |price the decision is currently based on (EUR/kWh)
+|`HeatingAllowedByPrice` |release of the heating request by the price control
+|`PriceNotAvailable` |WARNING: PRICE_OPTIMIZED, but no price -- fail-open active
+|`HeatingCurveMismatch` |WARNING: plant runs on curve parameters other than configured
+|===

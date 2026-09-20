@@ -1,0 +1,15 @@
+Bundle-Name: OpenEMS Edge External Influx
+Bundle-Vendor: FH Salzburg
+Bundle-License: https://opensource.org/licenses/EPL-2.0
+Bundle-Version: 1.0.0.${tstamp}
+
+Export-Package: io.openems.edge.external.influx
+
+-buildpath: \
+	${buildpath},\
+	io.openems.common,\
+	io.openems.edge.common,\
+	io.openems.edge.controller.api,\
+
+-testpath: \
+	${testpath}

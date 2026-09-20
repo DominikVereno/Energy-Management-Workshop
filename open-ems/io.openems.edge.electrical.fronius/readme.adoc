@@ -1,0 +1,34 @@
+= io.openems.edge.electrical.fronius
+
+Reads the power flow of a Fronius inverter via its Solar API and maps it to OpenEMS Channels.
+
+The component is *read-only* — it never writes to the device. It polls
+`+<baseUrl>/solar_api/v1/GetPowerFlowRealtimeData.fcgi+` and reads the values of inverter `1`.
+
+== Channels
+
+|===
+| Channel | Unit | Source in the JSON response
+
+| `BatteryPower` | W | `Body.Data.Site.P_Akku`
+| `GridPower` | W | `Body.Data.Site.P_Grid`
+| `LoadPower` | W | `Body.Data.Site.P_Load`
+| `PvPower` | W | `Body.Data.Site.P_PV`
+| `Soc` | % | `Body.Data.Inverters."1".SOC`
+| `BatteryMode` | - | `Body.Data.Inverters."1".Battery_Mode`
+| `CommunicationFailed` | Fault | set when the request, the API status code or the parsing fails
+|===
+
+On a communication or parsing failure the measured Channels are cleared, so that no stale values
+remain visible.
+
+== Configuration
+
+|===
+| Property | Description
+
+| `baseUrl` | Base URL of the inverter, e.g. `+http://192.168.1.50+`
+| `cycles` | Number of OpenEMS cycles between two requests; `1` means every cycle
+|===
+
+Ported from the Wattson project (`io.openems.edge.device.externalapi`).

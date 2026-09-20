@@ -1,0 +1,102 @@
+# Single pipeline of the monorepo. GitLab only evaluates the .gitlab-ci.yml in the repository
+# root, so the four pipelines of the former standalone repositories are merged here.
+#
+# Every image gets its own name under ${CI_REGISTRY_IMAGE}/<service>, otherwise all four would
+# push to the same address. The deployment builds locally and does not pull these images; they
+# exist so that a broken Dockerfile shows up in CI.
+
+stages: [test, build]
+
+default:
+  tags: [docker]
+
+simulator_tests:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - cd heat-pump-simulator
+    - python -V
+    - pip install -U pip
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - python -m compileall -q .
+    # Call them directly, not through pytest: the tests count failures themselves
+    # and report them via the exit code, pytest would only see one green function.
+    - python tests/modbus_test.py
+    - python tests/clock_control_test.py
+    - python tests/heating_curve_test.py
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: [heat-pump-simulator/**/*]
+    - if: $CI_COMMIT_BRANCH
+      changes: [heat-pump-simulator/**/*]
+
+.build_image:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: Dockerfile
+  script:
+    - mkdir -p /kaniko/.docker
+    - |
+      cat > /kaniko/.docker/config.json <<CFG
+      {
+        "auths": {
+          "${CI_REGISTRY}": {
+            "username": "${CI_REGISTRY_USER}",
+            "password": "${CI_REGISTRY_PASSWORD}"
+          }
+        }
+      }
+      CFG
+
+    - IMAGE="${CI_REGISTRY_IMAGE}/${SERVICE}"
+
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/${SERVICE}"
+      --dockerfile "${CI_PROJECT_DIR}/${SERVICE}/${DOCKERFILE}"
+      --destination "${IMAGE}:sha-${CI_COMMIT_SHA}"
+      --destination "${IMAGE}:${CI_COMMIT_REF_SLUG}"
+      --destination "${IMAGE}:latest"
+      --cache=true
+      --cache-repo "${IMAGE}/cache"
+
+build_grafana:
+  extends: .build_image
+  variables:
+    SERVICE: grafana
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes: [grafana/**/*]
+    - if: $CI_COMMIT_TAG
+
+build_influxdb:
+  extends: .build_image
+  variables:
+    SERVICE: influxdb
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes: [influxdb/**/*]
+    - if: $CI_COMMIT_TAG
+
+build_heat_pump_simulator:
+  extends: .build_image
+  variables:
+    SERVICE: heat-pump-simulator
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes: [heat-pump-simulator/**/*]
+    - if: $CI_COMMIT_TAG
+
+# The Gradle build (buildEdge -> fat jar) runs inside the multistage Dockerfile itself,
+# so no separate JDK job is needed.
+build_open_ems:
+  extends: .build_image
+  variables:
+    SERVICE: open-ems
+    DOCKERFILE: tools/docker/edge/Dockerfile
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes: [open-ems/**/*]
+    - if: $CI_COMMIT_TAG

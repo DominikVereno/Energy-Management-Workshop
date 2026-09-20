@@ -1,0 +1,7 @@
+.git
+**/bin
+**/bin_test
+**/generated
+**/build
+.gradle
+ui
