@@ -34,10 +34,6 @@ public interface HeatpumpIdm extends OpenemsComponent {
 				.text("Betriebsart Heizkreis A") //
 				.onInit(RegisterRange.limit("Betriebsart Heizkreis A", 0.0, 5.0))), //
 
-		FLOW_TEMPERATURE_SETPOINT(Doc.of(OpenemsType.INTEGER) //
-				.accessMode(AccessMode.READ_WRITE) //
-				.text("Sollvorlauftemperatur HK A [°C]") //
-				.onInit(RegisterRange.limit("Sollvorlauftemperatur HK A", 20.0, 90.0))), //
 
 		HEAT_DEMAND(Doc.of(OpenemsType.INTEGER) //
 				.accessMode(AccessMode.READ_WRITE) //

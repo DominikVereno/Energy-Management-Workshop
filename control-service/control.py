@@ -9,14 +9,4 @@ def calculate_flow_temperature_setpoint(
     grid_power: float,
 ) -> int:
 
-    setpoint = 30.0
-
-    setpoint += 4.0 * (23.0 - room_temperature)
-
-    if outdoor_temperature < 5.0:
-        setpoint += 2.0
-
-    if grid_power < -1.0 and room_temperature < 24.0:
-        setpoint += 4.0
-
-    return round(max(20.0, min(42.0, setpoint)))
+    return 42.0

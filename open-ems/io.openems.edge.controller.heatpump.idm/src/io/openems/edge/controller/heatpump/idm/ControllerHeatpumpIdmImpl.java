@@ -130,27 +130,25 @@ public class ControllerHeatpumpIdmImpl extends AbstractOpenemsComponent
 		double flowTemperature = flowTemperatureChannel.value().get();
 		double returnTemperature = returnTemperatureChannel.value().get();
 
-		// iDM liefert die Leistungen bereits in kW
 		double electricalPower = electricalPowerChannel.value().get();
 		double thermalPower = thermalPowerChannel.value().get();
 
-		// ExternalInflux liefert W -> Umrechnung auf kW
 		double pvPower = pvPowerChannel.value().get();
 		double gridPower = gridPowerChannel.value().get();
 
-		int setpoint = this.requestFlowTemperatureSetpoint(
-				roomTemperature,
-				outdoorTemperature,
-				flowTemperature,
-				returnTemperature,
-				electricalPower,
-				thermalPower,
-				pvPower,
-				gridPower);
-
-		this.writeRegister(
-				HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
-				setpoint);
+		//int setpoint = this.requestFlowTemperatureSetpoint(
+		//		roomTemperature,
+		//		outdoorTemperature,
+		//		flowTemperature,
+		//		returnTemperature,
+		//		electricalPower,
+		//		thermalPower,
+		//		pvPower,
+		//		gridPower);
+//
+		//this.writeRegister(
+		//		HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
+		//		setpoint);
 
 		this._setAppliedSetpoint(setpoint);
 	}

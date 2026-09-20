@@ -44,6 +44,10 @@ Mapping of OpenEMS channels to Modbus registers:
 
 [`HeatpumpIdmImpl.java`](open-ems/io.openems.edge.heatpump.idm/src/io/openems/edge/heatpump/idm/HeatpumpIdmImpl.java)
 
+Uncomment call to control service and register write: 
+
+[`ControllerHeatpumpIdmImpl.java`](open-ems/io.openems.edge.controller.heatpump.idm/src/io/openems/edge/controller/heatpump/idm/ControllerHeatpumpIdmImpl.java)
+
 ## Task 2 – Control Algorithm
 
 The control algorithm can be found here:
