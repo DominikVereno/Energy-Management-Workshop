@@ -145,8 +145,7 @@ public class ControllerHeatpumpIdmImpl extends AbstractOpenemsComponent
 			thermalPower,
 			pvPower,
 			gridPower);
-	
-		setpoint = 30;
+
 
 		this.writeRegister(
 			HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
