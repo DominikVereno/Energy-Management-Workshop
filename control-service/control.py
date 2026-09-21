@@ -11,4 +11,4 @@ def calculate_flow_temperature_setpoint(
 
     print(f"PV Power: {pv_power}")
 
-    return 42.0
+    return 20.0

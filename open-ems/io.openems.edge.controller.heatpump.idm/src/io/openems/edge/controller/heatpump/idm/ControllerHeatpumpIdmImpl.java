@@ -136,21 +136,23 @@ public class ControllerHeatpumpIdmImpl extends AbstractOpenemsComponent
 		double pvPower = pvPowerChannel.value().get();
 		double gridPower = gridPowerChannel.value().get();
 
-		// int setpoint = this.requestFlowTemperatureSetpoint(
-		//		roomTemperature,
-		//		outdoorTemperature,
-		//		flowTemperature,
-		//		returnTemperature,
-		//		electricalPower,
-		//		thermalPower,
-		//		pvPower,
-		//		gridPower);
-		//
-		// this.writeRegister(
-		//		HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
-		//		setpoint);
-		//
-		// this._setAppliedSetpoint(setpoint);
+		int setpoint = this.requestFlowTemperatureSetpoint(
+			roomTemperature,
+			outdoorTemperature,
+			flowTemperature,
+			returnTemperature,
+			electricalPower,
+			thermalPower,
+			pvPower,
+			gridPower);
+	
+		setpoint = 30;
+
+		this.writeRegister(
+			HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
+			setpoint);
+	
+		this._setAppliedSetpoint(setpoint);
 	}
 
 	private int requestFlowTemperatureSetpoint(
