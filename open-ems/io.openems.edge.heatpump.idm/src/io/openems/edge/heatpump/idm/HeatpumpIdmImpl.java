@@ -108,6 +108,10 @@ public class HeatpumpIdmImpl extends AbstractOpenemsModbusComponent
 						m(HeatpumpIdm.ChannelId.HEAT_DEMAND,
 								new UnsignedWordElement(1710))),
 
+				new FC3ReadRegistersTask(1449, Priority.HIGH,
+						m(HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
+								new UnsignedWordElement(1449))),
+
 				// Write Holding Registers
 				new FC16WriteRegistersTask(1393,
 						m(HeatpumpIdm.ChannelId.OPERATION_MODE,
