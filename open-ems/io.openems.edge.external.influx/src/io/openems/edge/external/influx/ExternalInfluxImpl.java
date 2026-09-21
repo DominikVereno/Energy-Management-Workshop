@@ -20,9 +20,9 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
 
 @Designate(ocd = Config.class, factory = true)
-@Component(//
-		name = "External.Influx", //
-		immediate = true, //
+@Component(
+		name = "External.Influx",
+		immediate = true,
 		configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class ExternalInfluxImpl extends AbstractOpenemsComponent
 		implements ExternalInflux, OpenemsComponent, Controller {
@@ -33,10 +33,10 @@ public class ExternalInfluxImpl extends AbstractOpenemsComponent
 	private Config config;
 
 	public ExternalInfluxImpl() {
-		super(//
-				OpenemsComponent.ChannelId.values(), //
-				Controller.ChannelId.values(), //
-				ExternalInflux.ChannelId.values() //
+		super(
+				OpenemsComponent.ChannelId.values(),
+				Controller.ChannelId.values(),
+				ExternalInflux.ChannelId.values()
 		);
 	}
 
@@ -92,8 +92,6 @@ public class ExternalInfluxImpl extends AbstractOpenemsComponent
 					HttpResponse.BodyHandlers.ofString());
 
 			this.log.info("InfluxDB response status: {}", response.statusCode());
-
-			// Temporarily log the complete response for debugging
 			this.log.info("InfluxDB response:\n{}", response.body());
 
 			if (response.statusCode() != 200) {
@@ -128,19 +126,17 @@ public class ExternalInfluxImpl extends AbstractOpenemsComponent
 			}
 
 			try {
-				String value = columns[6];
+				double value = Double.parseDouble(columns[6]);
 
 				if (line.contains("externalapi0/PvPower")) {
-					int pvPower = (int) Math.round(
-							Double.parseDouble(value) * 10.0);
+					double pvPower = value * 100.0 / 1000.0;
 
 					this._setPvPower(pvPower);
 					this.log.info("PV_POWER updated: {} W", pvPower);
 				}
 
 				if (line.contains("externalapi0/GridPower")) {
-					int gridPower = (int) Math.round(
-							Double.parseDouble(value));
+					double gridPower = value / 1000.0;
 
 					this._setGridPower(gridPower);
 					this.log.info("GRID_POWER updated: {} W", gridPower);

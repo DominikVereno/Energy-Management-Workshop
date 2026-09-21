@@ -9,4 +9,6 @@ def calculate_flow_temperature_setpoint(
     grid_power: float,
 ) -> int:
 
+    print(f"PV Power: {pv_power}")
+
     return 42.0

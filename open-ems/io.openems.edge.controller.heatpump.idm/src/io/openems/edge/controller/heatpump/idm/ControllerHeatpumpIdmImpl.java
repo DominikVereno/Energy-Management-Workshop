@@ -19,8 +19,8 @@ import org.osgi.service.metatype.annotations.Designate;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.referencetarget.GenerateTargetsFromReferences;
+import io.openems.edge.common.channel.DoubleReadChannel;
 import io.openems.edge.common.channel.FloatReadChannel;
-import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -120,9 +120,9 @@ public class ControllerHeatpumpIdmImpl extends AbstractOpenemsComponent
 		FloatReadChannel thermalPowerChannel = this.heatpump
 				.channel(HeatpumpIdm.ChannelId.THERMAL_POWER);
 
-		IntegerReadChannel pvPowerChannel = this.externalInflux
+		DoubleReadChannel pvPowerChannel = this.externalInflux
 				.channel(ExternalInflux.ChannelId.PV_POWER);
-		IntegerReadChannel gridPowerChannel = this.externalInflux
+		DoubleReadChannel gridPowerChannel = this.externalInflux
 				.channel(ExternalInflux.ChannelId.GRID_POWER);
 
 		double roomTemperature = roomTemperatureChannel.value().get();
@@ -136,7 +136,7 @@ public class ControllerHeatpumpIdmImpl extends AbstractOpenemsComponent
 		double pvPower = pvPowerChannel.value().get();
 		double gridPower = gridPowerChannel.value().get();
 
-		//int setpoint = this.requestFlowTemperatureSetpoint(
+		// int setpoint = this.requestFlowTemperatureSetpoint(
 		//		roomTemperature,
 		//		outdoorTemperature,
 		//		flowTemperature,
@@ -145,12 +145,12 @@ public class ControllerHeatpumpIdmImpl extends AbstractOpenemsComponent
 		//		thermalPower,
 		//		pvPower,
 		//		gridPower);
-//
-		//this.writeRegister(
+		//
+		// this.writeRegister(
 		//		HeatpumpIdm.ChannelId.FLOW_TEMPERATURE_SETPOINT,
 		//		setpoint);
-
-		this._setAppliedSetpoint(setpoint);
+		//
+		// this._setAppliedSetpoint(setpoint);
 	}
 
 	private int requestFlowTemperatureSetpoint(

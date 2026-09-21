@@ -9,11 +9,11 @@ public interface ExternalInflux extends OpenemsComponent {
 
 	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
-		PV_POWER(Doc.of(OpenemsType.INTEGER) //
+		PV_POWER(Doc.of(OpenemsType.DOUBLE) //
 				.unit(Unit.WATT) //
 				.text("PV Power")), //
 
-		GRID_POWER(Doc.of(OpenemsType.INTEGER) //
+		GRID_POWER(Doc.of(OpenemsType.DOUBLE) //
 				.unit(Unit.WATT) //
 				.text("Grid Power")), //
 		;
@@ -30,11 +30,11 @@ public interface ExternalInflux extends OpenemsComponent {
 		}
 	}
 
-	public default void _setPvPower(Integer value) {
+	public default void _setPvPower(Double value) {
 		this.channel(ChannelId.PV_POWER).setNextValue(value);
 	}
 
-	public default void _setGridPower(Integer value) {
+	public default void _setGridPower(Double value) {
 		this.channel(ChannelId.GRID_POWER).setNextValue(value);
 	}
 }
